@@ -1,14 +1,14 @@
 const TelegramBot = require(‘node-telegram-bot-api’);
 
-// Replace with your bot token
+// Your bot token
 const token = ‘7666805938:AAGvFPNMwF4T6rBpvDsksCNrmrUhLluUGRY’;
 
-// Create a bot that uses ‘polling’ to fetch new updates
+// Create bot instance
 const bot = new TelegramBot(token, { polling: true });
 
-console.log(‘Bot started successfully!’);
+console.log(‘🚀 SOL Trending Bot started successfully!’);
 
-// Welcome message when bot is started
+// Start command - works in private chats and groups
 bot.onText(//start/, (msg) => {
 const chatId = msg.chat.id;
 
@@ -26,7 +26,7 @@ bot.sendMessage(chatId, welcomeMessage);
 
 });
 
-// Trend command handler
+// Trend command - works in private chats and groups
 bot.onText(//trend/, (msg) => {
 const chatId = msg.chat.id;
 
@@ -58,37 +58,13 @@ bot.sendMessage(chatId, trendMessage, options);
 
 });
 
-// Handle any other messages (optional - for better user experience)
-bot.on(‘message’, (msg) => {
-const chatId = msg.chat.id;
-const messageText = msg.text;
-
-```
-// Only respond to messages that aren't commands and are direct messages to the bot
-if (!messageText.startsWith('/') && msg.chat.type === 'private') {
-    const helpMessage = `👋 Hello! I'm here to help you boost your token's visibility.
-```
-
-Available commands:
-• /start - Get started with the bot
-• /trend - Access the Fast-Track 6.0 trending system
-
-Type /trend to begin boosting your token now! 🚀`;
-
-```
-    bot.sendMessage(chatId, helpMessage);
-}
-```
-
-});
-
 // Error handling
 bot.on(‘error’, (error) => {
-console.error(‘Bot error:’, error);
+console.error(‘❌ Bot error:’, error);
 });
 
 bot.on(‘polling_error’, (error) => {
-console.error(‘Polling error:’, error);
+console.error(‘❌ Polling error:’, error);
 });
 
-console.log(‘Bot is running and listening for messages…’);
+console.log(‘✅ Bot is running and ready to receive commands in both private chats and groups!’);
