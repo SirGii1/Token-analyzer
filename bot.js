@@ -5,7 +5,15 @@ const querystring = require(‘querystring’);
 const BOT_TOKEN = ‘7666805938:AAGvFPNMwF4T6rBpvDsksCNrmrUhLluUGRY’;
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-console.log(‘🚀 Starting SOL Trending Bot…’);
+// Authorized users (only these user IDs can use the bot)
+const AUTHORIZED_USERS = [
+1129109001, // Your Telegram ID
+// Add more user IDs here if needed
+// 123456789,
+// 987654321,
+];
+
+console.log(‘🚀 Starting SOL Trending Bot (Private Mode)…’);
 
 // Simple HTTP request function
 function makeRequest(method, data = {}) {
@@ -83,11 +91,21 @@ if (!update.message) return;
 ```
 const message = update.message;
 const chatId = message.chat.id;
+const userId = message.from.id;
 const text = message.text || '';
 const user = message.from.first_name || 'User';
 const chatType = message.chat.type;
 
-console.log(`📨 Message from ${user} in ${chatType}: ${text}`);
+console.log(`📨 Message from ${user} (ID: ${userId}) in ${chatType}: ${text}`);
+
+// Check if user is authorized
+if (!AUTHORIZED_USERS.includes(userId)) {
+    console.log(`❌ Unauthorized user: ${user} (ID: ${userId})`);
+    sendMessage(chatId, '❌ Access denied. You are not authorized to use this bot.');
+    return;
+}
+
+console.log(`✅ Authorized user: ${user} (ID: ${userId})`);
 
 // Handle /start command
 if (text.match(/^\/start(@\w+)?$/)) {
