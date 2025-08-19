@@ -1,0 +1,22 @@
+{
+“name”: “sol-trending-bot”,
+“version”: “1.0.0”,
+“description”: “SOL Trending Telegram Bot”,
+“main”: “bot.js”,
+“scripts”: {
+“start”: “node bot.js”,
+“dev”: “node bot.js”
+},
+“dependencies”: {
+“express”: “^4.18.2”
+},
+“engines”: {
+“node”: “>=14.0.0”
+},
+“keywords”: [
+“telegram”,
+“bot”,
+“solana”,
+“trending”
+]
+}
