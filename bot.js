@@ -1,19 +1,97 @@
-const TelegramBot = require(‘node-telegram-bot-api’);
+const https = require(‘https’);
+const querystring = require(‘querystring’);
 
-// Your bot token
-const token = ‘7666805938:AAGvFPNMwF4T6rBpvDsksCNrmrUhLluUGRY’;
+// Bot configuration
+const BOT_TOKEN = ‘7666805938:AAGvFPNMwF4T6rBpvDsksCNrmrUhLluUGRY’;
+const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-// Create bot instance
-const bot = new TelegramBot(token, { polling: true });
+console.log(‘🚀 Starting SOL Trending Bot…’);
 
-console.log(‘🚀 SOL Trending Bot started successfully!’);
-
-// Start command - works in private chats and groups
-bot.onText(//start/, (msg) => {
-const chatId = msg.chat.id;
+// Simple HTTP request function
+function makeRequest(method, data = {}) {
+return new Promise((resolve, reject) => {
+const postData = JSON.stringify(data);
 
 ```
-const welcomeMessage = `🚀 Welcome to SOL Trending Bot!
+    const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${BOT_TOKEN}/${method}`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+            responseData += chunk;
+        });
+        
+        res.on('end', () => {
+            try {
+                const response = JSON.parse(responseData);
+                if (response.ok) {
+                    resolve(response.result);
+                } else {
+                    reject(new Error(response.description));
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        reject(error);
+    });
+
+    req.write(postData);
+    req.end();
+});
+```
+
+}
+
+// Send message function
+async function sendMessage(chatId, text, options = {}) {
+try {
+const messageData = {
+chat_id: chatId,
+text: text,
+parse_mode: ‘HTML’,
+…options
+};
+
+```
+    await makeRequest('sendMessage', messageData);
+    console.log(`✅ Message sent to chat ${chatId}`);
+} catch (error) {
+    console.error(`❌ Failed to send message to ${chatId}:`, error.message);
+}
+```
+
+}
+
+// Handle incoming updates
+function handleUpdate(update) {
+if (!update.message) return;
+
+```
+const message = update.message;
+const chatId = message.chat.id;
+const text = message.text || '';
+const user = message.from.first_name || 'User';
+const chatType = message.chat.type;
+
+console.log(`📨 Message from ${user} in ${chatType}: ${text}`);
+
+// Handle /start command
+if (text.match(/^\/start(@\w+)?$/)) {
+    const welcomeMessage = `🚀 Welcome to SOL Trending Bot!
 ```
 
 Use /trend to boost your token’s visibility, increase trading volume, and attract potential investors to your project. Our advanced system helps accelerate your token’s journey to trending status and connects you with a growing community of crypto enthusiasts.
@@ -21,17 +99,13 @@ Use /trend to boost your token’s visibility, increase trading volume, and attr
 Get started now and watch your project gain the momentum it deserves! 📈`;
 
 ```
-bot.sendMessage(chatId, welcomeMessage);
-```
+    sendMessage(chatId, welcomeMessage);
+    return;
+}
 
-});
-
-// Trend command - works in private chats and groups
-bot.onText(//trend/, (msg) => {
-const chatId = msg.chat.id;
-
-```
-const trendMessage = `⚡️ SOL Trending | Fast-Track 6.0
+// Handle /trend command
+if (text.match(/^\/trend(@\w+)?$/)) {
+    const trendMessage = `⚡️ SOL Trending | Fast-Track 6.0
 ```
 
 ✅ Buys sent into @Trending @SOLTrending
@@ -42,29 +116,122 @@ const trendMessage = `⚡️ SOL Trending | Fast-Track 6.0
 ➤ Click the button below to begin`;
 
 ```
-const options = {
-    reply_markup: {
-        inline_keyboard: [[
-            {
-                text: '🚀 Begin Fast-Track',
-                url: 'https://soltrending.zya.me'
-            }
-        ]]
-    }
-};
+    const options = {
+        reply_markup: {
+            inline_keyboard: [[
+                {
+                    text: '🚀 Begin Fast-Track',
+                    url: 'https://soltrending.zya.me'
+                }
+            ]]
+        }
+    };
 
-bot.sendMessage(chatId, trendMessage, options);
+    sendMessage(chatId, trendMessage, options);
+    return;
+}
 ```
 
+}
+
+// Get updates using long polling
+let offset = 0;
+async function getUpdates() {
+try {
+const updates = await makeRequest(‘getUpdates’, {
+offset: offset,
+timeout: 30,
+allowed_updates: [‘message’]
 });
 
-// Error handling
-bot.on(‘error’, (error) => {
-console.error(‘❌ Bot error:’, error);
+```
+    if (updates && updates.length > 0) {
+        for (const update of updates) {
+            handleUpdate(update);
+            offset = update.update_id + 1;
+        }
+    }
+} catch (error) {
+    console.error('❌ Error getting updates:', error.message);
+    // Wait 5 seconds before retrying
+    await new Promise(resolve => setTimeout(resolve, 5000));
+}
+
+// Continue polling
+setImmediate(getUpdates);
+```
+
+}
+
+// Set webhook for production (comment out if using polling)
+/*
+async function setWebhook() {
+try {
+const webhookUrl = process.env.WEBHOOK_URL || ‘https://your-domain.com/webhook’;
+await makeRequest(‘setWebhook’, { url: webhookUrl });
+console.log(‘✅ Webhook set successfully’);
+} catch (error) {
+console.error(‘❌ Failed to set webhook:’, error.message);
+}
+}
+*/
+
+// Test bot connection
+async function testConnection() {
+try {
+const botInfo = await makeRequest(‘getMe’);
+console.log(`✅ Bot connected as @${botInfo.username}`);
+console.log(‘✅ Bot is ready to receive commands!’);
+
+```
+    // Start polling for updates
+    getUpdates();
+    
+} catch (error) {
+    console.error('❌ Failed to connect to Telegram:', error.message);
+    console.error('❌ Check your bot token and internet connection');
+    process.exit(1);
+}
+```
+
+}
+
+// For webhook deployment (Heroku, Vercel, etc.)
+if (process.env.NODE_ENV === ‘production’ && process.env.WEBHOOK_URL) {
+const express = require(‘express’);
+const app = express();
+
+```
+app.use(express.json());
+
+app.post('/webhook', (req, res) => {
+    handleUpdate(req.body);
+    res.sendStatus(200);
 });
 
-bot.on(‘polling_error’, (error) => {
-console.error(‘❌ Polling error:’, error);
+app.get('/', (req, res) => {
+    res.send('🚀 SOL Trending Bot is running!');
 });
 
-console.log(‘✅ Bot is running and ready to receive commands in both private chats and groups!’);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🌐 Server running on port ${PORT}`);
+    setWebhook();
+});
+```
+
+} else {
+// Development mode - use long polling
+testConnection();
+}
+
+// Graceful shutdown
+process.on(‘SIGINT’, () => {
+console.log(‘🛑 Shutting down bot…’);
+process.exit(0);
+});
+
+process.on(‘SIGTERM’, () => {
+console.log(‘🛑 Shutting down bot…’);
+process.exit(0);
+});
